@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum EnquiryStatus {
+  PENDING
+  REPLIED
+}
+
+model User {
+  id                String           @id @default(uuid())
+  email             String           @unique
+  passwordHash      String
+  role              Role             @default(CUSTOMER)
+  phone             String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime         @default(now())
+  providerProfile   ProviderProfile?
+  sentEnquiries     Enquiry[]        @relation("CustomerEnquiries")
+  receivedEnquiries Enquiry[]        @relation("ProviderEnquiries")
+  reviewsGiven      Review[]         @relation("CustomerReviews")
+  reviewsReceived   Review[]         @relation("ProviderReviews")
+}
+
+model ServiceCategory {
+  id               String            @id @default(uuid())
+  name             String            @unique
+  iconUrl          String?
+  createdAt        DateTime          @default(now())
+  providerProfiles ProviderProfile[]
+}
+
+model ProviderProfile {
+  id           String          @id @default(uuid())
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String          @unique
+  businessName String
+  description  String
+  phone        String?
+  website      String?
+  address      String?
+  lat          Float?
+  lng          Float?
+  category     ServiceCategory @relation(fields: [categoryId], references: [id])
+  categoryId   String
+}
+
+model Enquiry {
+  id           String        @id @default(uuid())
+  customer     User          @relation("CustomerEnquiries", fields: [customerId], references: [id])
+  customerId   String
+  provider     User          @relation("ProviderEnquiries", fields: [providerId], references: [id])
+  providerId   String
+  message      String
+  status       EnquiryStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  customer     User     @relation("CustomerReviews", fields: [customerId], references: [id])
+  customerId   String
+  provider     User     @relation("ProviderReviews", fields: [providerId], references: [id])
+  providerId   String
+  rating       Int
+  comment      String?
+  createdAt    DateTime @default(now())
+}
